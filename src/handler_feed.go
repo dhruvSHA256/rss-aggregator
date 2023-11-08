@@ -37,17 +37,45 @@ func (apiCfg apiConfig) handleCreateFeed(w http.ResponseWriter, r *http.Request,
 	respondWithJson(w, 200, dataBaseFeedtoFeed(feed))
 }
 
-// func (apiCfg apiConfig) handleGetFeed(w http.ResponseWriter, r *http.Request) {
-// 	apiKey, err := auth.GetAPIKey(r.Header)
-// 	if err != nil {
-// 		respondWithError(w, 400, fmt.Sprintf("Couldnt get api key: %v", err))
-// 		return
-// 	}
+func (apiCfg apiConfig) handleGetFeeds(w http.ResponseWriter, r *http.Request) {
+	feeds, err := apiCfg.DB.GetFeeds(r.Context())
+	if err != nil {
+		respondWithError(w, 404, fmt.Sprintf("Coundlt get feeds: %v\n", err))
+		return
+	}
+	respondWithJson(w, 200, dataBaseFeedstoFeeds(feeds))
+}
 
-// 	user, err := apiCfg.DB.GetUserByAPIKey(r.Context(), apiKey)
-// 	if err != nil {
-// 		respondWithError(w, 404, fmt.Sprintf("User not found: %v", err))
-// 		return
-// 	}
-// 	respondWithJson(w, 200, dataBaseUsertoUser(user))
-// }
+func (apiCfg apiConfig) handleFollowFeed(w http.ResponseWriter, r *http.Request, user database.User) {
+	type parameters struct {
+		FeedID uuid.UUID `json:"feed_id"`
+	}
+	decoder := json.NewDecoder(r.Body)
+	params := parameters{}
+	err := decoder.Decode(&params)
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprint("error parsing JSON:", err))
+		return
+	}
+	feedFollow, err := apiCfg.DB.CreateFeedFollow(r.Context(), database.CreateFeedFollowParams{
+		ID:        uuid.New(),
+		CreatedAt: time.Now().UTC(),
+		UpdatedAt: time.Now().UTC(),
+		UserID:    user.ID,
+		FeedID:    params.FeedID,
+	})
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprint("Couldn't follow feed", err))
+		return
+	}
+	respondWithJson(w, 200, databaseFeedFollowtoFeedFollow(feedFollow))
+}
+
+func (apiCfg apiConfig) handleGetFollowFeed(w http.ResponseWriter, r *http.Request, user database.User) {
+	feeds, err := apiCfg.DB.GetFeedFollow(r.Context(), user.ID)
+	if err != nil {
+		respondWithError(w, 404, fmt.Sprintf("Couldnt get feeds: %v\n", err))
+		return
+	}
+	respondWithJson(w, 200, dataBaseFeedstoFeeds(feeds))
+}

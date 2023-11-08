@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"rss-aggregator/internal/database"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
@@ -38,14 +39,17 @@ func main() {
 	if dbURL == "" {
 		log.Fatal("DB_URL not set in env")
 	}
-	db, err := sql.Open("postgres", dbURL)
+	conn, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal("Cant connect to DB")
 	}
 
+	db := database.New(conn)
 	apiCfg := apiConfig{
-		DB: database.New(db),
+		DB: db,
 	}
+
+	go startScraping(db, 4, time.Minute)
 
 	router := chi.NewRouter()
 	router.Use(cors.Handler(cors.Options{
@@ -65,7 +69,7 @@ func main() {
 	v1Router.Get("/feeds", apiCfg.handleGetFeeds)
 	v1Router.Post("/feed_follow", apiCfg.middlewareAuth(apiCfg.handleFollowFeed))
 	v1Router.Get("/feed_follow", apiCfg.middlewareAuth(apiCfg.handleGetFollowFeed))
-	v1Router.Delete("/feed_follow", apiCfg.middlewareAuth(apiCfg.handleDeleteFollowFeed))
+	v1Router.Delete("/feed_follow/{feedFollowID}", apiCfg.middlewareAuth(apiCfg.handleDeleteFollowFeed))
 
 	router.Mount("/v1", v1Router)
 
@@ -74,8 +78,8 @@ func main() {
 		Addr:    ":" + portString,
 	}
 	log.Printf("Running on: %v", portString)
-	err1 := srv.ListenAndServe()
-	if err1 != nil {
+	err = srv.ListenAndServe()
+	if err != nil {
 		log.Fatal(err)
 	}
 

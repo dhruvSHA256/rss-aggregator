@@ -2,11 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"gateway/handler"
+	"gateway/internal/database"
 	"log"
 	"net/http"
 	"os"
-	"gateway/handler"
-	"gateway/internal/database"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
@@ -45,15 +45,15 @@ func main() {
 	}))
 
 	v1Router := chi.NewRouter()
-	v1Router.Get("/healthz", handler.HandleCheckHealth)
 	v1Router.Post("/user", apiCfg.HandleCreateUser)
 	v1Router.Get("/user", apiCfg.MiddlewareAuth(apiCfg.HandleGetUser))
+	v1Router.Post("/auth", apiCfg.HandleAuthUser)
 	v1Router.Post("/feed", apiCfg.MiddlewareAuth(apiCfg.HandleCreateFeed))
 	v1Router.Get("/feeds", apiCfg.HandleGetFeeds)
-	v1Router.Post("/feed_follow", apiCfg.MiddlewareAuth(apiCfg.HandleFollowFeed))
-	v1Router.Get("/feed_follow", apiCfg.MiddlewareAuth(apiCfg.HandleGetFollowFeed))
-	v1Router.Delete("/feed_follow/{feedFollowID}", apiCfg.MiddlewareAuth(apiCfg.HandleDeleteFollowFeed))
-	v1Router.Get("/posts", apiCfg.MiddlewareAuth(apiCfg.HandleGetPosts))
+	// v1Router.Post("/feed_follow", apiCfg.MiddlewareAuth(apiCfg.HandleFollowFeed))
+	// v1Router.Get("/feed_follow", apiCfg.MiddlewareAuth(apiCfg.HandleGetFollowFeed))
+	// v1Router.Delete("/feed_follow/{feedFollowID}", apiCfg.MiddlewareAuth(apiCfg.HandleDeleteFollowFeed))
+	// v1Router.Get("/posts", apiCfg.MiddlewareAuth(apiCfg.HandleGetPosts))
 
 	router.Mount("/v1", v1Router)
 

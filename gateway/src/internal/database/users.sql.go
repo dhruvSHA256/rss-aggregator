@@ -13,9 +13,9 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (id, created_at, updated_at, name, email, api_key)
-VALUES ($1, $2, $3, $4, $5, encode(sha256(random()::text::bytea), 'hex'))
-RETURNING id, created_at, updated_at, name, email, api_key
+INSERT INTO users (id, created_at, updated_at, name, email, password)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, created_at, updated_at, name, email, password
 `
 
 type CreateUserParams struct {
@@ -24,6 +24,7 @@ type CreateUserParams struct {
 	UpdatedAt time.Time
 	Name      string
 	Email     string
+	Password  string
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -33,6 +34,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.UpdatedAt,
 		arg.Name,
 		arg.Email,
+		arg.Password,
 	)
 	var i User
 	err := row.Scan(
@@ -41,17 +43,22 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.UpdatedAt,
 		&i.Name,
 		&i.Email,
-		&i.ApiKey,
+		&i.Password,
 	)
 	return i, err
 }
 
-const getUserByAPIKey = `-- name: GetUserByAPIKey :one
-SELECT id, created_at, updated_at, name, email, api_key FROM users WHERE api_key = $1
+const getUserByEmailPassword = `-- name: GetUserByEmailPassword :one
+SELECT id, created_at, updated_at, name, email, password FROM users WHERE email = $1 and password = $2
 `
 
-func (q *Queries) GetUserByAPIKey(ctx context.Context, apiKey string) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserByAPIKey, apiKey)
+type GetUserByEmailPasswordParams struct {
+	Email    string
+	Password string
+}
+
+func (q *Queries) GetUserByEmailPassword(ctx context.Context, arg GetUserByEmailPasswordParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByEmailPassword, arg.Email, arg.Password)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -59,13 +66,13 @@ func (q *Queries) GetUserByAPIKey(ctx context.Context, apiKey string) (User, err
 		&i.UpdatedAt,
 		&i.Name,
 		&i.Email,
-		&i.ApiKey,
+		&i.Password,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, created_at, updated_at, name, email, api_key FROM users WHERE id = $1
+SELECT id, created_at, updated_at, name, email, password FROM users WHERE id = $1
 `
 
 func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
@@ -77,7 +84,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.UpdatedAt,
 		&i.Name,
 		&i.Email,
-		&i.ApiKey,
+		&i.Password,
 	)
 	return i, err
 }

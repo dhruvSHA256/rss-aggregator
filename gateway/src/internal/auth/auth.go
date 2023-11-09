@@ -1,10 +1,7 @@
 package auth
 
 import (
-	"errors"
 	"fmt"
-	"net/http"
-	"strings"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -19,16 +16,7 @@ type Claims struct {
 	jwt.StandardClaims
 }
 
-func DecodeJWT(headers http.Header) (uuid.UUID, error) {
-	val := headers.Get("Authorization")
-	if val == "" {
-		return uuid.UUID{}, errors.New("auth header missing")
-	}
-	vals := strings.Split(val, " ")
-	if len(vals) != 2 {
-		return uuid.UUID{}, errors.New("invalid auth header")
-	}
-	token := vals[1]
+func DecodeJWT(token string) (uuid.UUID, error) {
 	validatedJWT, err := validateJWT(token)
 	if err != nil {
 		return uuid.UUID{}, err

@@ -2,17 +2,29 @@ package handler
 
 import (
 	"fmt"
-	"net/http"
 	"gateway/helper"
 	"gateway/internal/auth"
 	"gateway/internal/database"
+	"net/http"
+	"strings"
 )
 
 type authHandler func(http.ResponseWriter, *http.Request, database.User)
 
 func (apiCfg *ApiConfig) MiddlewareAuth(handler authHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		userId, err := auth.DecodeJWT(r.Header)
+		val := r.Header.Get("Authorization")
+		if val == "" {
+			helper.RespondWithError(w, 403, fmt.Sprint("auth header missing"))
+			return
+		}
+		vals := strings.Split(val, " ")
+		if len(vals) != 2 {
+			helper.RespondWithError(w, 403, fmt.Sprint("invalid auth header"))
+		}
+
+		token := vals[1]
+		userId, err := auth.DecodeJWT(token)
 		if err != nil {
 			helper.RespondWithError(w, 403, fmt.Sprintf("Invalid token: %v", err))
 			return

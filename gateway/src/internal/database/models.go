@@ -45,5 +45,5 @@ type User struct {
 	UpdatedAt time.Time
 	Name      string
 	Email     string
-	ApiKey    string
+	Password  string
 }

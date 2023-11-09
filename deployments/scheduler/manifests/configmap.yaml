@@ -4,3 +4,5 @@ metadata:
   name: scheduler-configmap
 data:
   DB_URL: "postgres://postgres:postgres@postgres:5432/rssagg?sslmode=disable"
+  RABBIT_URL: "amqp://guest:guest@rabbitmq:5672/"
+  QUEUE_NAME: "feeds"

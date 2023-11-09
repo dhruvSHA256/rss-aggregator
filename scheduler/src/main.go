@@ -17,32 +17,25 @@ import (
 	"github.com/streadway/amqp"
 )
 
-func sendMessage(message string, conn *amqp.Connection, queueName string) error {
-	ch, err := conn.Channel()
-	if err != nil {
-		return fmt.Errorf("failed to open a channel: %v", err)
-	}
-	defer ch.Close()
-	err = ch.Publish(
-		"",        // Exchange
-		queueName, // Routing key (queue name)
-		false,     // Mandatory
-		false,     // Immediate
+func sendMessage(message string, queue *amqp.Queue, ch *amqp.Channel) error {
+	log.Printf("sending message %v to queue %q\n", message, queue.Name)
+	err := ch.Publish(
+		"",         // exchange
+		queue.Name, // routing key
+		false,      // mandatory
+		false,      // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
 			Body:        []byte(message),
-		},
-	)
+		})
 	if err != nil {
-		return fmt.Errorf("failed to publish message: %v", err)
+		log.Println("Failed to publish a message")
+		return err
 	}
-
-	fmt.Printf("Message sent to RabbitMQ: %s\n", message)
 	return nil
 }
 
-func startScraping(db *database.Queries, concurrency int, timeBetweenRequest time.Duration, rabbit_conn *amqp.Connection, queueName string) {
-	log.Printf("Scraping on %v goroutines every %s duration", concurrency, timeBetweenRequest)
+func startScraping(db *database.Queries, concurrency int, timeBetweenRequest time.Duration, queue *amqp.Queue, ch *amqp.Channel) {
 	ticker := time.NewTicker(timeBetweenRequest)
 	for ; ; <-ticker.C {
 		feeds, err := db.GetNextFeedsToFetch(context.Background(), int32(concurrency))
@@ -60,7 +53,7 @@ func startScraping(db *database.Queries, concurrency int, timeBetweenRequest tim
 				return
 			}
 			message := string(message_bytes)
-			err = sendMessage(message, rabbit_conn, queueName)
+			err = sendMessage(message, queue, ch)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -72,27 +65,6 @@ func startScraping(db *database.Queries, concurrency int, timeBetweenRequest tim
 		}
 	}
 }
-
-// func scrapeFeed(db *database.Queries, feed database.Feed) {
-
-// 	rssFeed, err := urlToFeed(feed.Url)
-// 	if err != nil {
-// 		log.Println("error fetching feed", err)
-// 		return
-// 	}
-// 	log.Printf("Feed %s collected, %v posts found", rssFeed.Title, len(rssFeed.Items))
-// 	for _, item := range rssFeed.Items {
-// 		db.CreatePost(context.Background(), database.CreatePostParams{
-// 			ID:          uuid.New(),
-// 			CreatedAt:   time.Now().UTC(),
-// 			UpdatedAt:   time.Now().UTC(),
-// 			Title:       item.Title,
-// 			Url:         item.Link,
-// 			PublishedAt: item.PublishedParsed.UTC(),
-// 			FeedID:      feed.ID,
-// 		})
-// 	}
-// }
 
 func urlToFeed(url string) (gofeed.Feed, error) {
 	fp := gofeed.NewParser()
@@ -118,6 +90,10 @@ func main() {
 	if queueName == "" {
 		log.Fatal("QUEUE_NAME not set in env")
 	}
+	db_conn, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal("Cant connect to DB", err)
+	}
 
 	// Connect to RabbitMQ server
 	rabbit_conn, err := amqp.Dial(rabbitURL)
@@ -125,16 +101,29 @@ func main() {
 		fmt.Printf("failed to connect to RabbitMQ: %v", err)
 		return
 	}
-	db_conn, err := sql.Open("postgres", dbURL)
+	ch, err := rabbit_conn.Channel()
 	if err != nil {
-		log.Fatal("Cant connect to DB", err)
+		fmt.Print("failed to open channel")
+		return
 	}
-
 	defer func() {
+		ch.Close()
 		rabbit_conn.Close()
 		db_conn.Close()
 	}()
+	q, err := ch.QueueDeclare(
+		queueName, // name
+		true,      // durable
+		false,     // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		nil,       // arguments
+	)
+	if err != nil {
+		fmt.Print("Failed to declare a queue")
+		return
+	}
 
 	db := database.New(db_conn)
-	startScraping(db, 4, time.Minute, rabbit_conn, queueName)
+	startScraping(db, 4, time.Minute, &q, ch)
 }

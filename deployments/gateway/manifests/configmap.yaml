@@ -4,3 +4,4 @@ metadata:
   name: gateway-configmap
 data:
   DB_URL: "postgres://postgres:postgres@postgres:5432/rssagg?sslmode=disable"
+  PORT: "8080"

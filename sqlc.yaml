@@ -18,3 +18,9 @@ sql:
     gen:
       go:
         out: "./scheduler/src/internal/database"
+  - schema: "sql/schema"
+    queries: "sql/queries"
+    engine: "postgresql"
+    gen:
+      go:
+        out: "./worker/src/internal/database"

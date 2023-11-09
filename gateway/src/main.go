@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"rss-aggregator/internal/database"
+	"rss-aggregator/internal/scraper"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -49,7 +50,7 @@ func main() {
 		DB: db,
 	}
 
-	go startScraping(db, 4, time.Minute)
+	go scraper.StartScraping(db, 4, time.Minute)
 
 	router := chi.NewRouter()
 	router.Use(cors.Handler(cors.Options{

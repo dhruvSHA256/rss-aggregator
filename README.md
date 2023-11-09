@@ -13,4 +13,3 @@ processing service
     add msg to kafka to nofify user if email enabled
 nofity service
     reads msg from kafka about email notification and sends email
-

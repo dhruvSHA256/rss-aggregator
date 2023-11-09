@@ -35,7 +35,8 @@ func (apiCfg apiConfig) handleCreateFeed(w http.ResponseWriter, r *http.Request,
 		respondWithError(w, 400, fmt.Sprint("Couldn't create user", err))
 		return
 	}
-	respondWithJson(w, 200, dataBaseFeedtoFeed(feed))
+	apiCfg.handleFollowFeed(w, r, user)
+	// respondWithJson(w, 200, dataBaseFeedtoFeed(feed))
 }
 
 func (apiCfg apiConfig) handleGetFeeds(w http.ResponseWriter, r *http.Request) {
@@ -96,4 +97,13 @@ func (apiCfg apiConfig) handleDeleteFollowFeed(w http.ResponseWriter, r *http.Re
 		return
 	}
 	respondWithJson(w, 200, struct{}{})
+}
+
+func (apiCfg apiConfig) handleGetPosts(w http.ResponseWriter, r *http.Request, user database.User) {
+	posts, err := apiCfg.DB.GetPosts(r.Context(), user.ID)
+	if err != nil {
+		respondWithError(w, 404, fmt.Sprintf("Couldnt get posts: %v\n", err))
+		return
+	}
+	respondWithJson(w, 200, posts)
 }

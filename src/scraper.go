@@ -6,6 +6,8 @@ import (
 	"rss-aggregator/internal/database"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func startScraping(db *database.Queries, concurrency int, timeBetweenRequest time.Duration) {
@@ -43,5 +45,14 @@ func scrapeFeed(db *database.Queries, wg *sync.WaitGroup, feed database.Feed) {
 	log.Printf("Feed %s collected, %v posts found", rssFeed.Title, len(rssFeed.Items))
 	for _, item := range rssFeed.Items {
 		log.Printf("Title: %s ", item.Title)
+		db.CreatePost(context.Background(), database.CreatePostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now().UTC(),
+			UpdatedAt:   time.Now().UTC(),
+			Title:       item.Title,
+			Url:         item.Link,
+			PublishedAt: item.PublishedParsed.UTC(),
+			FeedID:      feed.ID,
+		})
 	}
 }

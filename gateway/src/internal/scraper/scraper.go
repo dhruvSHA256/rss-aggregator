@@ -3,7 +3,7 @@ package scraper
 import (
 	"context"
 	"log"
-	"rss-aggregator/internal/database"
+	"gateway/internal/database"
 	"sync"
 	"time"
 

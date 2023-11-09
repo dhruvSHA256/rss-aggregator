@@ -1,3 +1,13 @@
+gateway 
+    create user
+    add/follow feeds
+authsvc
+    used by gateway
+scraper scheduler
+scraper worker
+
+
+
 user profile service:
     user signup
     auth

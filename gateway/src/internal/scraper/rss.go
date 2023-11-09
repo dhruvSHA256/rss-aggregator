@@ -7,9 +7,8 @@ import (
 )
 
 func urlToFeed(url string) (gofeed.Feed, error) {
-
 	fp := gofeed.NewParser()
-	feed, err := fp.ParseURL("http://feeds.twit.tv/twit.xml")
+	feed, err := fp.ParseURL(url)
 	if err != nil {
 		log.Fatal("Unable to get feed: ", err)
 		return gofeed.Feed{}, nil

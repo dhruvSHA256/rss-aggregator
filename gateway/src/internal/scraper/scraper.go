@@ -44,7 +44,7 @@ func scrapeFeed(db *database.Queries, wg *sync.WaitGroup, feed database.Feed) {
 	}
 	log.Printf("Feed %s collected, %v posts found", rssFeed.Title, len(rssFeed.Items))
 	for _, item := range rssFeed.Items {
-		log.Printf("Title: %s ", item.Title)
+		// log.Printf("Title: %s ", item.Title)
 		db.CreatePost(context.Background(), database.CreatePostParams{
 			ID:          uuid.New(),
 			CreatedAt:   time.Now().UTC(),

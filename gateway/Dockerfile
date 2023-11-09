@@ -7,15 +7,15 @@ WORKDIR /go/src/app
 # Copy the source code into the container
 COPY src/ .
 
-# Set environment variables
 ENV DB_URL="postgres://postgres:postgres@localhost:5432/rssagg?sslmode=disable"
 ENV PORT=8080
+
+# Expose port 8080 to the outside world
+EXPOSE 8080
+RUN go install github.com/pressly/goose/v3/cmd/goose@latest
 
 # Build the Go application
 RUN go build -o main .
 
-# Expose port 8080 to the outside world
-EXPOSE 8080
-
 # Command to run the executable
-CMD ["./main"]
+CMD ["bash", "-c", "cd sql/schema && goose postgres $DB_URL up && cd ../../ ; ./main"]

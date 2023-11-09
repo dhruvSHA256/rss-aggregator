@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"rss-aggregator/internal/auth"
 	"rss-aggregator/internal/database"
 	"time"
 
@@ -32,6 +34,12 @@ func (apiCfg apiConfig) handleCreateUser(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		respondWithError(w, 400, fmt.Sprint("Couldn't create user", err))
 		return
+	}
+	jwt_token, err := auth.GenerateJWT(user.ID)
+	if err != nil {
+		log.Fatalln("Unable to generate jwt", err)
+	} else {
+		log.Println(jwt_token)
 	}
 	respondWithJson(w, 200, dataBaseUsertoUser(user))
 }

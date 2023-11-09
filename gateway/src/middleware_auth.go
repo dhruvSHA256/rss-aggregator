@@ -11,13 +11,13 @@ type authHandler func(http.ResponseWriter, *http.Request, database.User)
 
 func (apiCfg *apiConfig) middlewareAuth(handler authHandler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		apiKey, err := auth.GetAPIKey(r.Header)
+		userId, err := auth.DecodeJWT(r.Header)
 		if err != nil {
-			respondWithError(w, 400, fmt.Sprintf("Couldnt get api key: %v", err))
+			respondWithError(w, 403, fmt.Sprintf("Invalid token: %v", err))
 			return
 		}
 
-		user, err := apiCfg.DB.GetUserByAPIKey(r.Context(), apiKey)
+		user, err := apiCfg.DB.GetUserByID(r.Context(), userId)
 		if err != nil {
 			respondWithError(w, 404, fmt.Sprintf("User not found: %v", err))
 			return

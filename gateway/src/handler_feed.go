@@ -23,7 +23,7 @@ func (apiCfg apiConfig) handleCreateFeed(w http.ResponseWriter, r *http.Request,
 		respondWithError(w, 400, fmt.Sprint("error parsing JSON:", err))
 		return
 	}
-	_, err = apiCfg.DB.CreateFeed(r.Context(), database.CreateFeedParams{
+    feed, err := apiCfg.DB.CreateFeed(r.Context(), database.CreateFeedParams{
 		ID:        uuid.New(),
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
@@ -35,8 +35,7 @@ func (apiCfg apiConfig) handleCreateFeed(w http.ResponseWriter, r *http.Request,
 		respondWithError(w, 400, fmt.Sprint("Couldn't create user", err))
 		return
 	}
-	apiCfg.handleFollowFeed(w, r, user)
-	// respondWithJson(w, 200, dataBaseFeedtoFeed(feed))
+	respondWithJson(w, 200, dataBaseFeedtoFeed(feed))
 }
 
 func (apiCfg apiConfig) handleGetFeeds(w http.ResponseWriter, r *http.Request) {
